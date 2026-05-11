@@ -2,7 +2,9 @@
 ](https://agent-69fd0ccce515907--visionary-zuccutto-f7f805.netlify.app/)
 # ClipReady — AI Social Video Studio https://leafy-clafoutis-e008de.netlify.app/
 
-Turn any video into a social-media-ready package using AI.
+Your Video. Social
+Ready in Seconds.
+Drop a video. AI reads the scene, location, and weather — then writes captions, subtitles, and platform descriptions, and burns them directly into your video.
 
 ## What it does
 
