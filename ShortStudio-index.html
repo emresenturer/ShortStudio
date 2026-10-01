@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClipReady · AI Social Video Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#07090f;--surf:rgba(255,255,255,.033);--surf2:rgba(255,255,255,.058);
+      --bdr:rgba(255,255,255,.08);--bdr2:rgba(255,255,255,.15);
+      --text:#dce3f2;--muted:rgba(220,227,242,.42);--muted2:rgba(220,227,242,.2);
+      --ok:#34d399;--err:#f87171;--r:13px;
+      --ff-t:'Bebas Neue',sans-serif;--ff-b:'DM Mono',monospace;--ff-s:'Instrument Serif',serif;
+    }
+    html,body{height:100%;}
+    body{background:var(--bg);color:var(--text);font-family:var(--ff-b);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+    #root{min-height:100vh;}
+    ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px;}
+
+    /* HEADER */
+    .hdr{display:flex;align-items:center;justify-content:space-between;padding:15px 28px;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:200;background:rgba(7,9,15,.92);backdrop-filter:blur(14px);}
+    .logo{display:flex;align-items:center;gap:10px;}
+    .logo-box{width:30px;height:30px;border-radius:7px;background:#4b8cf7;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;}
+    .logo-name{font-family:var(--ff-t);font-size:20px;letter-spacing:2px;}
+    .logo-name b{color:#4b8cf7;font-weight:400;}
+    .hdr-r{display:flex;align-items:center;gap:10px;}
+    .provider-badge{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:1px;padding:6px 14px;border-radius:20px;border:1px solid;cursor:pointer;transition:all .2s;font-family:var(--ff-b);text-transform:uppercase;}
+    .provider-badge.active{color:var(--ok);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.07);}
+    .provider-badge.inactive{color:var(--err);border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.07);animation:pulse-r 2s infinite;}
+    @keyframes pulse-r{0%,100%{opacity:1}50%{opacity:.6}}
+    .settings-btn{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;border-radius:20px;border:1px solid var(--bdr);background:var(--surf);color:var(--muted);cursor:pointer;transition:all .2s;font-family:var(--ff-b);}
+    .settings-btn:hover{border-color:var(--bdr2);color:var(--text);}
+
+    /* MODAL BASE */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+    .modal{background:#0b0e1b;border:1px solid var(--bdr2);border-radius:18px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;}
+    .modal-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+    .modal-title{font-family:var(--ff-t);font-size:26px;letter-spacing:2px;}
+    .modal-sub{font-size:12px;color:var(--muted);line-height:1.85;margin-top:6px;}
+    .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:4px;transition:color .2s;}
+    .modal-close:hover{color:var(--text);}
+    .modal-body{padding:20px 28px 28px;}
+    .modal-foot{padding:0 28px 24px;}
+
+    /* PROVIDER CARDS */
+    .provider-list{display:flex;flex-direction:column;gap:12px;}
+    .pcard{border:1px solid var(--bdr);border-radius:12px;overflow:hidden;transition:border-color .2s;}
+    .pcard.selected{border-color:var(--p-color,#4b8cf7);}
+    .pcard-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;background:var(--surf);transition:background .2s;}
+    .pcard-head:hover{background:var(--surf2);}
+    .pcard-ico{font-size:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--surf2);flex-shrink:0;}
+    .pcard-info{flex:1;}
+    .pcard-name{font-family:var(--ff-t);font-size:17px;letter-spacing:1.5px;}
+    .pcard-co{font-size:10px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+    .pcard-status{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:12px;border:1px solid;flex-shrink:0;}
+    .pcard-status.ok{color:var(--ok);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.08);}
+    .pcard-status.empty{color:var(--muted2);border-color:var(--bdr);}
+    .pcard-status.using{background:var(--p-color,#4b8cf7);border-color:var(--p-color,#4b8cf7);color:#fff;}
+    .radio-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--bdr2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .radio-dot.on{border-color:var(--p-color,#4b8cf7);background:var(--p-color,#4b8cf7);}
+    .radio-dot.on::after{content:'';width:7px;height:7px;border-radius:50%;background:#fff;}
+
+    .pcard-body{padding:14px 16px;background:var(--bg);border-top:1px solid var(--bdr);}
+    .field-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+    .field-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);min-width:50px;}
+    .key-wrap{flex:1;position:relative;}
+    .key-in{width:100%;background:var(--surf);border:1px solid var(--bdr2);border-radius:8px;padding:9px 38px 9px 12px;font-family:var(--ff-b);font-size:12px;color:var(--text);outline:none;transition:border-color .2s;}
+    .key-in:focus{border-color:var(--p-color,rgba(75,140,247,.6));}
+    .key-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px;}
+    .model-sel{flex:1;background:var(--surf);border:1px solid var(--bdr2);border-radius:8px;padding:9px 12px;font-family:var(--ff-b);font-size:12px;color:var(--text);outline:none;cursor:pointer;-webkit-appearance:none;}
+    .pcard-links{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
+    .key-hint{font-size:10px;color:var(--muted2);}
+    .get-key-link{font-size:11px;color:#4b8cf7;text-decoration:none;letter-spacing:.5px;}
+    .get-key-link:hover{text-decoration:underline;}
+    .use-btn{padding:7px 16px;border-radius:7px;border:1px solid var(--p-color,#4b8cf7);background:rgba(75,140,247,.1);color:var(--p-color,#4b8cf7);font-family:var(--ff-b);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+    .use-btn:hover{background:rgba(75,140,247,.2);}
+    .use-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* PAGE */
+    .page{max-width:920px;margin:0 auto;padding:52px 24px 90px;}
+
+    /* UPLOAD */
+    .up-hero{text-align:center;padding-bottom:44px;}
+    .up-badge{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#4b8cf7;margin-bottom:20px;padding:5px 14px;border:1px solid rgba(75,140,247,.3);border-radius:20px;}
+    .up-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#4b8cf7;animation:blink 2s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .up-title{font-family:var(--ff-t);font-size:clamp(46px,7.5vw,82px);line-height:.93;letter-spacing:1px;margin-bottom:18px;}
+    .up-title em{color:#4b8cf7;font-style:italic;font-family:var(--ff-s);}
+    .up-sub{font-size:13px;color:var(--muted);max-width:420px;margin:0 auto 44px;line-height:1.85;}
+    .drop-zone{border:2px dashed var(--bdr2);border-radius:20px;padding:68px 32px;text-align:center;cursor:pointer;transition:all .25s;background:var(--surf);position:relative;overflow:hidden;}
+    .drop-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(75,140,247,.1),transparent 68%);opacity:0;transition:opacity .3s;}
+    .drop-zone:hover::before,.drop-zone.over::before{opacity:1;}
+    .drop-zone:hover,.drop-zone.over{border-color:#4b8cf7;background:rgba(75,140,247,.04);}
+    .drop-icon{font-size:52px;margin-bottom:16px;}
+    .drop-h{font-family:var(--ff-t);font-size:26px;letter-spacing:2px;margin-bottom:8px;}
+    .drop-p{font-size:12px;color:var(--muted);}
+    .drop-p strong{color:#4b8cf7;}
+    .drop-fmts{display:flex;justify-content:center;gap:7px;margin-top:20px;flex-wrap:wrap;}
+    .fmt{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border:1px solid var(--bdr);border-radius:20px;color:var(--muted2);}
+
+    /* PROCESSING */
+    .proc-wrap{text-align:center;padding:64px 0;}
+    .proc-ring{width:104px;height:104px;margin:0 auto 32px;position:relative;}
+    .ring-svg{animation:spin 2s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .ring-bg{fill:none;stroke:var(--bdr2);stroke-width:3;}
+    .ring-fg{fill:none;stroke:#4b8cf7;stroke-width:3;stroke-linecap:round;stroke-dasharray:260;transition:stroke-dashoffset .5s ease;}
+    .ring-ic{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;}
+    .proc-h{font-family:var(--ff-t);font-size:30px;letter-spacing:3px;margin-bottom:6px;}
+    .proc-s{font-size:12px;color:#4b8cf7;margin-bottom:30px;min-height:18px;}
+    .steps{display:inline-flex;flex-direction:column;gap:10px;text-align:left;}
+    .step{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted2);transition:color .3s;}
+    .step.on{color:#4b8cf7;}.step.done{color:var(--muted);}
+    .step-ic{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+
+    /* PREVIEW */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+    @media(max-width:700px){.grid{grid-template-columns:1fr;}}
+    .col{display:flex;flex-direction:column;gap:16px;}
+    .card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;}
+    .lbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;display:block;}
+    .vid-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:9/16;}
+    .vid-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+    .vid-sub{position:absolute;bottom:11%;left:50%;transform:translateX(-50%);width:88%;text-align:center;pointer-events:none;z-index:10;font-size:14px;font-weight:700;color:#fff;line-height:1.45;text-shadow:0 2px 8px rgba(0,0,0,.9);background:rgba(0,0,0,.65);padding:7px 14px;border-radius:8px;}
+    .vid-ov{position:absolute;top:13%;left:0;right:0;text-align:center;z-index:10;pointer-events:none;font-family:var(--ff-t);font-size:22px;letter-spacing:3px;color:#fff;text-shadow:0 0 20px rgba(0,0,0,.9),0 2px 6px #000;}
+    .meta-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .meta-r{display:flex;flex-direction:column;gap:3px;}
+    .meta-k{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);}
+    .meta-v{font-size:12px;color:var(--text);}
+    .scene{font-family:var(--ff-s);font-style:italic;font-size:15px;line-height:1.75;}
+    .sub-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;}
+    .sub-row{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:var(--surf);border:1px solid var(--bdr);}
+    .sub-t{font-size:10px;color:#4b8cf7;min-width:48px;margin-top:2px;flex-shrink:0;}
+    .sub-tx{font-size:12px;flex:1;}
+    .ptabs{display:flex;gap:1px;background:var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+    .ptab{flex:1;padding:10px 6px;border:none;cursor:pointer;font-family:var(--ff-b);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--surf);transition:all .2s;}
+    .ptab.on{background:var(--surf2);color:var(--text);}
+    .ptab-ic{display:block;font-size:18px;margin-bottom:3px;}
+    .pc-title{font-family:var(--ff-t);font-size:18px;letter-spacing:1px;margin-bottom:14px;}
+    .pc-desc{font-size:12px;line-height:1.85;color:var(--muted);white-space:pre-wrap;margin-bottom:14px;}
+    .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+    .tag{font-size:11px;color:#4b8cf7;background:rgba(75,140,247,.1);border:1px solid rgba(75,140,247,.2);padding:3px 10px;border-radius:20px;}
+    .kwtag{font-size:11px;color:var(--muted);background:var(--surf);border:1px solid var(--bdr);padding:3px 10px;border-radius:20px;}
+    .hook{font-family:var(--ff-s);font-style:italic;font-size:14px;line-height:1.7;padding:12px 14px;background:var(--surf);border-radius:9px;border-left:2px solid #4b8cf7;margin-bottom:14px;}
+
+    /* BUTTONS */
+    .btn{padding:9px 16px;border-radius:8px;border:1px solid var(--bdr);background:var(--surf);color:var(--muted);font-family:var(--ff-b);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+    .btn:hover{border-color:var(--bdr2);color:var(--text);}
+    .btn.primary{background:#4b8cf7;border-color:#4b8cf7;color:#fff;font-size:13px;padding:13px 26px;}
+    .btn.primary:hover{background:#7aaeff;border-color:#7aaeff;box-shadow:0 6px 22px rgba(75,140,247,.3);transform:translateY(-1px);}
+    .btn.ok{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3);color:var(--ok);}
+    .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .btn-full{width:100%;display:flex;align-items:center;justify-content:center;}
+    .back-btn{font-family:var(--ff-b);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--bdr);padding:8px 16px;border-radius:7px;cursor:pointer;transition:all .2s;}
+    .back-btn:hover{border-color:var(--bdr2);color:var(--text);}
+    .res-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:12px;}
+    .res-title{font-family:var(--ff-t);font-size:28px;letter-spacing:2px;}
+
+    /* EXPORT / DONE */
+    .ctr{text-align:center;padding:64px 24px;}
+    .big-ic{font-size:60px;margin-bottom:22px;}
+    .ex-title{font-family:var(--ff-t);font-size:32px;letter-spacing:3px;margin-bottom:10px;}
+    .ex-sub{font-size:13px;color:var(--muted);margin-bottom:32px;line-height:1.8;max-width:420px;margin-left:auto;margin-right:auto;}
+    .prog-wrap{width:100%;max-width:400px;margin:0 auto 12px;height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;}
+    .prog-bar{height:100%;background:#4b8cf7;border-radius:3px;transition:width .3s ease;}
+    .done-acts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px;}
+    a.dl{display:inline-flex;align-items:center;justify-content:center;padding:13px 26px;border-radius:8px;background:#4b8cf7;color:#fff;text-decoration:none;font-family:var(--ff-b);font-size:13px;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+    a.dl:hover{background:#7aaeff;transform:translateY(-1px);}
+    .err-box{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.22);border-radius:10px;padding:14px 18px;color:var(--err);font-size:12px;line-height:1.7;margin-top:14px;white-space:pre-wrap;}
+    .fade-in{animation:fi .45s ease both;}
+    @keyframes fi{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+    hr.dv{border:none;border-top:1px solid var(--bdr);margin:14px 0;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="importmap">
+{"imports":{"react":"https://esm.sh/react@18.3.1","react-dom/client":"https://esm.sh/react-dom@18.3.1/client","exifr":"https://esm.sh/exifr@7.1.3"}}
+</script>
+<script type="module">
+import React,{useState,useRef,useEffect,useCallback}from'react';
+import{createRoot}from'react-dom/client';
+import exifr from'exifr';
+const ce=React.createElement;
+const ss=sessionStorage;
+
+/* ══════════════════════════════════════════════════
+   PROVIDER CONFIG
+══════════════════════════════════════════════════ */
+const PROVIDERS={
+  claude:{
+    id:'claude',name:'Claude',company:'Anthropic',icon:'🔶',color:'#d97757',
+    models:[
+      {id:'claude-sonnet-4-6',label:'Sonnet 4.6 — Recommended'},
+      {id:'claude-opus-4-6',label:'Opus 4.6 — Best Quality'},
+      {id:'claude-haiku-4-5-20251001',label:'Haiku 4.5 — Fastest'}
+    ],
+    placeholder:'sk-ant-api03-...',
+    hint:'Starts with sk-ant-',
+    docsUrl:'https://console.anthropic.com/keys'
+  },
+  openai:{
+    id:'openai',name:'GPT-4o',company:'OpenAI',icon:'🟢',color:'#10a37f',
+    models:[
+      {id:'gpt-4o',label:'GPT-4o — Recommended'},
+      {id:'gpt-4o-mini',label:'GPT-4o Mini — Faster & cheaper'},
+      {id:'gpt-4-turbo',label:'GPT-4 Turbo'}
+    ],
+    placeholder:'sk-proj-...',
+    hint:'Starts with sk-',
+    docsUrl:'https://platform.openai.com/api-keys'
+  },
+  gemini:{
+    id:'gemini',name:'Gemini',company:'Google',icon:'🔵',color:'#4285f4',
+    models:[
+      {id:'gemini-2.0-flash',label:'Gemini 2.0 Flash — Recommended'},
+      {id:'gemini-1.5-pro',label:'Gemini 1.5 Pro — Best quality'},
+      {id:'gemini-1.5-flash',label:'Gemini 1.5 Flash — Fast & cheap'}
+    ],
+    placeholder:'AIzaSy...',
+    hint:'Starts with AIza',
+    docsUrl:'https://aistudio.google.com/app/apikey'
+  },
+  mistral:{
+    id:'mistral',name:'Pixtral',company:'Mistral AI',icon:'🟠',color:'#ff7000',
+    models:[
+      {id:'pixtral-large-latest',label:'Pixtral Large — Best quality'},
+      {id:'pixtral-12b-2409',label:'Pixtral 12B — Faster'}
+    ],
+    placeholder:'your-mistral-key...',
+    hint:'From console.mistral.ai',
+    docsUrl:'https://console.mistral.ai/api-keys'
+  }
+};
+const PROVIDER_ORDER=['claude','openai','gemini','mistral'];
+
+const WMO={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Dense drizzle',61:'Light rain',63:'Moderate rain',65:'Heavy rain',71:'Light snow',73:'Moderate snow',75:'Heavy snow',80:'Rain showers',81:'Moderate showers',82:'Violent showers',95:'Thunderstorm',96:'Thunderstorm+hail'};
+const PLATS=[{key:'tiktok',label:'TikTok / Reels',icon:'🎵'},{key:'youtube',label:'YouTube Shorts',icon:'▶'},{key:'facebook',label:'Facebook',icon:'🌐'}];
+const STEPS=[{icon:'📋',lbl:'Reading video metadata'},{icon:'🎞',lbl:'Extracting key frames'},{icon:'📍',lbl:'Locating scene & weather'},{icon:'🧠',lbl:'Analyzing with AI'},{icon:'✨',lbl:'Building content package'}];
+const fmtT=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const isVid=f=>f&&(f.type.startsWith('video/')||/\.(mp4|mov|m4v|avi|webm|mkv|hevc|3gp|flv|wmv|qt)$/i.test(f.name||''));
+
+/* ══════════════════════════════════════════════════
+   VIDEO UTILS
+══════════════════════════════════════════════════ */
+function loadVideoMeta(file){
+  return new Promise((res,rej)=>{
+    const v=document.createElement('video');v.preload='metadata';
+    const url=URL.createObjectURL(file);let done=false;
+    const fin=val=>{if(done)return;done=true;clearTimeout(tm);URL.revokeObjectURL(url);val instanceof Error?rej(val):res(val);};
+    const tm=setTimeout(()=>fin(new Error('Video load timed out (15s).')),15000);
+    v.onloadedmetadata=()=>{
+      if(!v.duration||isNaN(v.duration)||v.duration===Infinity)return fin(new Error('Cannot read video duration.'));
+      fin({duration:v.duration,width:v.videoWidth||1080,height:v.videoHeight||1920});
+    };
+    v.onerror=()=>fin(new Error(v.error?.code===4
+      ?'Browser cannot decode this format.\nFor iPhone HEVC: Settings→Camera→Formats→"Most Compatible".\nOr convert to MP4 via QuickTime→Export As→1080p.'
+      :`Video load error (code ${v.error?.code||'?'}).`));
+    v.src=url;
+  });
+}
+
+async function extractFrames(file,n=5){
+  const v=document.createElement('video');v.muted=true;v.preload='auto';
+  const url=URL.createObjectURL(file);v.src=url;
+  await new Promise((res,rej)=>{const tm=setTimeout(res,12000);v.onloadedmetadata=()=>{clearTimeout(tm);res();};v.onerror=()=>{clearTimeout(tm);rej(new Error('Frame extraction load failed.'));};v.load();});
+  const dur=v.duration||10;
+  const times=Array.from({length:n},(_,i)=>n===1?dur*0.3:Math.max(0.1,dur*0.05+dur*0.88*i/(n-1)));
+  const frames=[];
+  for(const t of times){try{const d=await grabFrame(v,Math.min(t,dur-0.1));if(d)frames.push({time:t,dataUrl:d});}catch(e){console.warn('Frame skip',t,e.message);}}
+  URL.revokeObjectURL(url);
+  if(!frames.length)throw new Error('Could not extract any frames from the video.');
+  return frames;
+}
+
+function grabFrame(video,time){
+  return new Promise((res,rej)=>{
+    const tm=setTimeout(()=>{cleanup();rej(new Error('Seek timeout'));},10000);
+    const cleanup=()=>{clearTimeout(tm);video.removeEventListener('seeked',onS);video.removeEventListener('error',onE);};
+    const onS=()=>{cleanup();try{const c=document.createElement('canvas');const vw=video.videoWidth||640,vh=video.videoHeight||1136;c.width=Math.min(vw,640);c.height=Math.round(c.width*vh/vw);c.getContext('2d').drawImage(video,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.72));}catch(e){rej(new Error('Canvas: '+e.message));}};
+    const onE=()=>{cleanup();rej(new Error('Seek error'));};
+    video.addEventListener('seeked',onS);video.addEventListener('error',onE);video.currentTime=time;
+  });
+}
+
+async function getExif(file){
+  try{const d=await exifr.parse(file,{gps:true,pick:['DateTimeOriginal','CreateDate','Make','Model']})||{};const rawDate=d.DateTimeOriginal||d.CreateDate;return{datetime:rawDate?new Date(rawDate):new Date(file.lastModified),gps:(d.latitude&&d.longitude)?{lat:d.latitude,lon:d.longitude}:null,camera:d.Make?`${d.Make} ${d.Model||''}`.trim():null};}
+  catch{return{datetime:new Date(file.lastModified),gps:null,camera:null};}
+}
+
+async function geocode(lat,lon){
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,{headers:{'Accept-Language':'en'}});const d=await r.json();const a=d.address||{};return[a.city||a.town||a.village||a.county,a.state,a.country].filter(Boolean).join(', ')||null;}
+  catch{return null;}
+}
+
+async function getWeather(lat,lon,date){
+  try{const ds=date.toISOString().split('T')[0];const r=await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${ds}&end_date=${ds}&hourly=temperature_2m,weathercode&timezone=auto`);const d=await r.json();if(!d.hourly)return null;const h=Math.min(date.getHours(),(d.hourly.temperature_2m?.length||1)-1);const tc=d.hourly.temperature_2m?.[h];return{desc:WMO[d.hourly.weathercode?.[h]??0]||'Clear',tempC:tc,tempF:tc!=null?Math.round(tc*9/5+32):null};}
+  catch{return null;}
+}
+
+/* ══════════════════════════════════════════════════
+   AI PROVIDER ADAPTERS
+══════════════════════════════════════════════════ */
+async function callClaude(key,model,system,userText,images){
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model,max_tokens:1500,system,messages:[{role:'user',content:[{type:'text',text:userText},...images.map(b=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b}}))]}]})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid Claude API key — check console.anthropic.com');if(res.status===429)throw new Error('Claude rate limit — wait and retry');throw new Error(`Claude ${res.status}: ${e?.error?.message||res.statusText}`);}
+  const d=await res.json();if(d.error)throw new Error(d.error.message);
+  return d.content?.find(b=>b.type==='text')?.text||'';
+}
+
+async function callOpenAI(key,model,system,userText,images){
+  const res=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({model,max_tokens:1500,response_format:{type:'json_object'},messages:[{role:'system',content:system},{role:'user',content:[{type:'text',text:userText},...images.map(b=>({type:'image_url',image_url:{url:`data:image/jpeg;base64,${b}`,detail:'high'}}))]}]})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid OpenAI API key — check platform.openai.com');if(res.status===429)throw new Error('OpenAI rate limit — wait and retry');throw new Error(`OpenAI ${res.status}: ${e?.error?.message||res.statusText}`);}
+  const d=await res.json();
+  return d.choices?.[0]?.message?.content||'';
+}
+
+async function callGemini(key,model,system,userText,images){
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const res=await fetch(url,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:userText},...images.map(b=>({inlineData:{mimeType:'image/jpeg',data:b}}))]}],generationConfig:{maxOutputTokens:1500,temperature:.7}})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===400)throw new Error(`Gemini error: ${e?.error?.message||'Bad request. Check model name.'}`);if(res.status===403)throw new Error('Invalid Gemini API key or API not enabled in Google Cloud');throw new Error(`Gemini ${res.status}: ${e?.error?.message||res.statusText}`);}
+  const d=await res.json();if(d.error)throw new Error('Gemini: '+d.error.message);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+}
+
+async function callMistral(key,model,system,userText,images){
+  const res=await fetch('https://api.mistral.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({model,max_tokens:1500,messages:[{role:'system',content:system},{role:'user',content:[{type:'text',text:userText},...images.map(b=>({type:'image_url',image_url:`data:image/jpeg;base64,${b}`}))]}]})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid Mistral API key — check console.mistral.ai');if(res.status===429)throw new Error('Mistral rate limit — wait and retry');throw new Error(`Mistral ${res.status}: ${e?.message||res.statusText}`);}
+  const d=await res.json();
+  return d.choices?.[0]?.message?.content||'';
+}
+
+async function analyzeVideo(providerId,key,model,frames,meta,loc,wx){
+  const dur=meta.duration;
+  const imgs=frames.map(f=>f.dataUrl.split(',')[1]);
+  const frameDesc=frames.map((f,i)=>`FRAME ${i+1} at ${f.time.toFixed(1)}s (${Math.round(f.time/dur*100)}%)`).join(', ');
+  const ctx=[`Duration: ${dur.toFixed(1)}s`,`Resolution: ${meta.width}×${meta.height}`,`Captured: ${meta.datetime?.toLocaleString()}`,loc?`Location: ${loc}`:null,wx?`Weather: ${wx.desc}${wx.tempF!=null?`, ${wx.tempF}°F / ${Math.round(wx.tempC)}°C`:''}`:null,meta.camera?`Camera: ${meta.camera}`:null].filter(Boolean).join('\n');
+
+  const system=`You are a world-class social media content strategist. Analyze the provided video frames and metadata, then produce a complete, ready-to-publish social media content package. Return ONLY valid JSON (no markdown, no preamble):
+{
+  "understanding": "2-3 vivid sentences: what is happening, who/what is the subject, setting, emotional tone",
+  "mood": "one word mood descriptor",
+  "subtitles": [{"start":0.0,"end":4.0,"text":"caption max 8 words","emoji":"🌅"}],
+  "textOverlays": [{"time":0.5,"duration":3.0,"text":"HEADLINE","position":"top"}],
+  "platforms": {
+    "tiktok":   {"title":"under 60 chars","description":"casual 2-4 line TikTok caption with emojis","hashtags":["t1","t2","t3","t4","t5","t6","t7"],"hook":"opening hook under 12 words"},
+    "youtube":  {"title":"SEO title under 70 chars","description":"3-5 sentence YouTube description","hashtags":["t1","t2","t3","t4","t5"],"tags":["kw1","kw2","kw3","kw4","kw5"]},
+    "facebook": {"title":"engaging title","description":"warm 3-5 sentence community caption","hashtags":["t1","t2","t3","t4"]}
+  },
+  "thumbnailMoment": ${(dur*.3).toFixed(1)}
+}
+Rules: subtitles 5-8 entries evenly 0–${dur.toFixed(0)}s, max 8 words each. Weave location (${loc||'unknown'}) and weather (${wx?.desc||'unknown'}) in naturally. hashtags: no # symbol, lowercase, no spaces. Platform voices: TikTok=casual/trendy, YouTube=SEO/informative, Facebook=warm/community.`;
+
+  const userText=`Metadata:\n${ctx}\n\nFrames sampled: ${frameDesc}\n\nGenerate the complete content package:`;
+
+  let raw='';
+  switch(providerId){
+    case'claude':  raw=await callClaude(key,model,system,userText,imgs);  break;
+    case'openai':  raw=await callOpenAI(key,model,system,userText,imgs);  break;
+    case'gemini':  raw=await callGemini(key,model,system,userText,imgs);  break;
+    case'mistral': raw=await callMistral(key,model,system,userText,imgs); break;
+    default: throw new Error('Unknown AI provider: '+providerId);
+  }
+  try{return JSON.parse(raw.replace(/```json|```/g,'').trim());}
+  catch{const m=raw.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('AI returned unexpected format. Try again.');}
+}
+
+/* ══════════════════════════════════════════════════
+   CANVAS EXPORT
+══════════════════════════════════════════════════ */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();};
+}
+
+function drawSub(ctx,cw,ch,sub){
+  const text=`${sub.emoji||''} ${sub.text||''}`.trim();if(!text)return;
+  const fs=Math.max(20,Math.round(ch*.042));ctx.save();ctx.font=`bold ${fs}px Arial,sans-serif`;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  const maxW=cw*.84,pad=fs*.5,yBase=ch*.85,words=text.split(' '),lines=[];let cur='';
+  for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}if(cur)lines.push(cur);
+  const lh=fs*1.35,th=lines.length*lh,bw=Math.min(Math.max(...lines.map(l=>ctx.measureText(l).width))+pad*2.2,cw*.9);
+  ctx.fillStyle='rgba(0,0,0,.72)';ctx.beginPath();ctx.roundRect(cw/2-bw/2,yBase-th-pad*.6,bw,th+pad*1.4,8);ctx.fill();
+  ctx.fillStyle='#fff';lines.forEach((l,i)=>ctx.fillText(l,cw/2,yBase-th+pad*.8+fs+i*lh));ctx.restore();
+}
+
+function drawOv(ctx,cw,ch,ov){
+  if(!ov?.text)return;const fs=Math.max(28,Math.round(ch*.062));ctx.save();ctx.font=`900 ${fs}px 'Arial Black',Impact,Arial,sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';const y=ov.position!=='bottom'?ch*.08:ch*.86;ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=14;ctx.shadowOffsetY=3;ctx.strokeStyle='rgba(0,0,0,.9)';ctx.lineWidth=fs*.08;ctx.strokeText(ov.text.toUpperCase(),cw/2,y);ctx.fillStyle='#fff';ctx.fillText(ov.text.toUpperCase(),cw/2,y);ctx.restore();
+}
+
+async function exportVid(file,ai,onProg){
+  const vid=document.createElement('video');vid.muted=true;vid.preload='auto';vid.playsInline=true;
+  const furl=URL.createObjectURL(file);vid.src=furl;
+  await new Promise((res,rej)=>{const tm=setTimeout(res,15000);vid.onloadedmetadata=()=>{clearTimeout(tm);res();};vid.onerror=()=>{clearTimeout(tm);rej(new Error('Export video load failed'));};vid.load();});
+  const cw=vid.videoWidth||1080,ch=vid.videoHeight||1920;
+  const canvas=document.createElement('canvas');canvas.width=cw;canvas.height=ch;const ctx=canvas.getContext('2d');
+  let atrack=null;
+  try{const ac=new AudioContext();const src=ac.createMediaElementSource(vid);const dest=ac.createMediaStreamDestination();src.connect(dest);atrack=dest.stream.getAudioTracks()[0]||null;}catch(e){console.warn('Audio skip:',e.message);}
+  const tracks=[...canvas.captureStream(30).getVideoTracks()];if(atrack)tracks.push(atrack);
+  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+  const chunks=[];const rec=new MediaRecorder(new MediaStream(tracks),{mimeType:mime||undefined,videoBitsPerSecond:8_000_000});
+  rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+  const subs=ai.subtitles||[],ovs=ai.textOverlays||[];
+  return new Promise((res,rej)=>{
+    rec.onstop=()=>{URL.revokeObjectURL(furl);res(URL.createObjectURL(new Blob(chunks,{type:'video/webm'})));};
+    rec.onerror=rej;rec.start(200);vid.play();
+    const loop=()=>{if(vid.ended){rec.stop();return;}ctx.drawImage(vid,0,0,cw,ch);const t=vid.currentTime;onProg(vid.duration>0?t/vid.duration:0);const s=subs.find(s=>t>=s.start&&t<=s.end);if(s)drawSub(ctx,cw,ch,s);const o=ovs.find(o=>t>=o.time&&t<=o.time+(o.duration||3));if(o)drawOv(ctx,cw,ch,o);requestAnimationFrame(loop);};
+    requestAnimationFrame(loop);vid.onended=()=>setTimeout(()=>{if(rec.state==='recording')rec.stop();},600);
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   SETTINGS MODAL
+══════════════════════════════════════════════════ */
+function SettingsModal({keys,models,active,onChange,onClose}){
+  const [localKeys,setLK]  =useState({...keys});
+  const [localMods,setLM]  =useState({...models});
+  const [localActive,setLA]=useState(active);
+  const [shows,setShows]   =useState({});
+
+  const save=()=>{
+    // persist to sessionStorage
+    Object.entries(localKeys).forEach(([k,v])=>ss.setItem('cr_k_'+k,v));
+    Object.entries(localMods).forEach(([k,v])=>ss.setItem('cr_m_'+k,v));
+    ss.setItem('cr_active',localActive);
+    onChange(localKeys,localMods,localActive);
+    onClose();
+  };
+
+  const canUse=(pid)=>localKeys[pid]?.trim().length>0;
+
+  return ce('div',{className:'modal-bg',onClick:e=>e.target===e.currentTarget&&onClose()},
+    ce('div',{className:'modal'},
+      ce('div',{className:'modal-head'},
+        ce('div',null,
+          ce('div',{className:'modal-title'},'AI Provider'),
+          ce('p',{className:'modal-sub'},'Enter your API key for any provider. Select one to use for analysis. Keys stay in this browser session only.')
+        ),
+        ce('button',{className:'modal-close',onClick:onClose},'✕')
+      ),
+      ce('div',{className:'modal-body'},
+        ce('div',{className:'provider-list'},
+          PROVIDER_ORDER.map(pid=>{
+            const p=PROVIDERS[pid];
+            const isActive=localActive===pid;
+            const hasKey=canUse(pid);
+            return ce('div',{key:pid,className:`pcard ${isActive?'selected':''}`,style:{'--p-color':p.color}},
+              ce('div',{className:'pcard-head',onClick:()=>hasKey&&setLA(pid)},
+                ce('div',{className:`radio-dot ${isActive?'on':''}`}),
+                ce('div',{className:'pcard-ico'},p.icon),
+                ce('div',{className:'pcard-info'},
+                  ce('div',{className:'pcard-name'},p.name),
+                  ce('div',{className:'pcard-co'},p.company)
+                ),
+                ce('div',{className:`pcard-status ${isActive?'using':hasKey?'ok':'empty'}`},
+                  isActive?'▶ Using':hasKey?'✓ Ready':'No key'
+                )
+              ),
+              ce('div',{className:'pcard-body'},
+                ce('div',{className:'field-row'},
+                  ce('span',{className:'field-lbl'},'Key'),
+                  ce('div',{className:'key-wrap'},
+                    ce('input',{className:'key-in',type:shows[pid]?'text':'password',placeholder:p.placeholder,value:localKeys[pid]||'',onChange:e=>{const v=e.target.value;setLK(k=>({...k,[pid]:v}));if(v.trim()&&localActive==='')setLA(pid);}}),
+                    ce('button',{className:'key-eye',onClick:()=>setShows(s=>({...s,[pid]:!s[pid]}))},shows[pid]?'🙈':'👁')
+                  )
+                ),
+                ce('div',{className:'field-row'},
+                  ce('span',{className:'field-lbl'},'Model'),
+                  ce('select',{className:'model-sel',value:localMods[pid]||p.models[0].id,onChange:e=>setLM(m=>({...m,[pid]:e.target.value}))},
+                    p.models.map(m=>ce('option',{key:m.id,value:m.id},m.label))
+                  )
+                ),
+                ce('div',{className:'pcard-links'},
+                  ce('span',{className:'key-hint'},p.hint),
+                  ce('a',{className:'get-key-link',href:p.docsUrl,target:'_blank'},'Get API key →')
+                ),
+                !isActive&&hasKey&&ce('button',{className:'use-btn',style:{marginTop:'12px'},onClick:()=>setLA(pid)},`Use ${p.name} →`)
+              )
+            );
+          })
+        )
+      ),
+      ce('div',{className:'modal-foot'},
+        ce('button',{className:'btn primary',style:{width:'100%'},onClick:save},'Save & Close')
+      )
+    )
+  );
+}
+
+/* ══════════════════════════════════════════════════
+   APP
+══════════════════════════════════════════════════ */
+function App(){
+  const loadSS=pid=>ss.getItem('cr_k_'+pid)||'';
+  const loadMod=pid=>ss.getItem('cr_m_'+pid)||PROVIDERS[pid].models[0].id;
+
+  const [keys,setKeys]     =useState(()=>Object.fromEntries(PROVIDER_ORDER.map(p=>[p,loadSS(p)])));
+  const [mods,setMods]     =useState(()=>Object.fromEntries(PROVIDER_ORDER.map(p=>[p,loadMod(p)])));
+  const [active,setActive] =useState(()=>ss.getItem('cr_active')||'');
+  const [modal,setModal]   =useState(false);
+  const [phase,setPhase]   =useState('upload');
+  const [file,setFile]     =useState(null);
+  const [vurl,setVurl]     =useState('');
+  const [meta,setMeta]     =useState(null);
+  const [ai,setAI]         =useState(null);
+  const [loc,setLoc]       =useState(null);
+  const [wx,setWx]         =useState(null);
+  const [step,setStep]     =useState(0);
+  const [plat,setPlat]     =useState('tiktok');
+  const [expPct,setExpPct] =useState(0);
+  const [expUrl,setExpUrl] =useState('');
+  const [err,setErr]       =useState('');
+  const [curSub,setCurSub] =useState(null);
+  const [curOv,setCurOv]   =useState(null);
+  const [copied,setCopied] =useState({});
+  const vidRef=useRef(null),dropRef=useRef(null),fileRef=useRef(null);
+
+  const onSettingsSave=(k,m,a)=>{setKeys(k);setMods(m);setActive(a);};
+
+  const run=useCallback(async(f)=>{
+    if(!isVid(f)){setErr('Please upload a video file (MP4, MOV, WebM, etc.)');return;}
+    if(f.size>600*1024*1024){setErr('File too large — max 500MB.');return;}
+    if(!active||!keys[active]?.trim()){setErr('Please configure an AI provider first — click "AI Settings" in the top right.');setModal(true);return;}
+    setErr('');setFile(f);setVurl(URL.createObjectURL(f));setPhase('processing');setStep(0);
+    try{
+      const[vMeta,exif]=await Promise.all([loadVideoMeta(f),getExif(f)]);
+      const m={...vMeta,...exif,name:f.name,size:f.size};setMeta(m);
+      setStep(1);const frames=await extractFrames(f,5);
+      setStep(2);let l=null,w=null;
+      if(m.gps){[l,w]=await Promise.all([geocode(m.gps.lat,m.gps.lon).catch(()=>null),getWeather(m.gps.lat,m.gps.lon,m.datetime).catch(()=>null)]);setLoc(l);setWx(w);}
+      setStep(3);const content=await analyzeVideo(active,keys[active],mods[active],frames,m,l,w);
+      setStep(4);await new Promise(r=>setTimeout(r,500));setAI(content);setPhase('preview');
+    }catch(e){console.error(e);setErr(e.message||'Unexpected error.');setPhase('upload');}
+  },[active,keys,mods]);
+
+  useEffect(()=>{
+    const v=vidRef.current;if(!v||!ai)return;
+    const fn=()=>{const t=v.currentTime;setCurSub(ai.subtitles?.find(s=>t>=s.start&&t<=s.end)||null);setCurOv(ai.textOverlays?.find(o=>t>=o.time&&t<=o.time+(o.duration||3))||null);};
+    v.addEventListener('timeupdate',fn);return()=>v.removeEventListener('timeupdate',fn);
+  },[ai]);
+
+  const cp=(text,k)=>{navigator.clipboard.writeText(text).catch(()=>{});setCopied(p=>({...p,[k]:true}));setTimeout(()=>setCopied(p=>({...p,[k]:false})),2200);};
+  const doExport=async()=>{setPhase('exporting');setExpPct(0);try{const u=await exportVid(file,ai,setExpPct);setExpUrl(u);setPhase('done');}catch(e){setErr('Export: '+e.message);setPhase('preview');}};
+  const reset=()=>{if(vurl)URL.revokeObjectURL(vurl);if(expUrl)URL.revokeObjectURL(expUrl);setPhase('upload');setFile(null);setVurl('');setMeta(null);setAI(null);setLoc(null);setWx(null);setExpUrl('');setErr('');setCurSub(null);setCurOv(null);setStep(0);};
+
+  const activeProvider=active&&PROVIDERS[active];
+  const isConfigured=active&&keys[active]?.trim().length>0;
+
+  const PlatPanel=()=>{
+    const pc=ai?.platforms?.[plat]||{};
+    const all=[pc.title,pc.description,(pc.hashtags||[]).map(t=>'#'+t).join(' ')].filter(Boolean).join('\n\n');
+    return ce('div',{className:'card'},
+      ce('div',{className:'pc-title'},pc.title||'—'),
+      ce('hr',{className:'dv'}),
+      ce('span',{className:'lbl'},'Description'),
+      ce('div',{className:'pc-desc'},pc.description||'—'),
+      plat==='tiktok'&&pc.hook?ce(React.Fragment,null,ce('hr',{className:'dv'}),ce('span',{className:'lbl'},'Opening Hook'),ce('div',{className:'hook'},`"${pc.hook}"`)):null,
+      plat==='youtube'&&pc.tags?.length?ce(React.Fragment,null,ce('hr',{className:'dv'}),ce('span',{className:'lbl'},'YouTube Tags'),ce('div',{className:'tags'},...(pc.tags||[]).map((t,i)=>ce('span',{key:i,className:'kwtag'},t)))):null,
+      ce('hr',{className:'dv'}),
+      ce('span',{className:'lbl'},'Hashtags'),
+      ce('div',{className:'tags'},...(pc.hashtags||[]).map((t,i)=>ce('span',{key:i,className:'tag'},'#'+t))),
+      ce('hr',{className:'dv'}),
+      ce('div',{className:'btn-row'},
+        ce('button',{className:`btn ${copied.ti?'ok':''}`,onClick:()=>cp(pc.title||'','ti')},copied.ti?'✓':'Copy Title'),
+        ce('button',{className:`btn ${copied.de?'ok':''}`,onClick:()=>cp(pc.description||'','de')},copied.de?'✓':'Copy Caption'),
+        ce('button',{className:`btn ${copied.al?'ok':''}`,onClick:()=>cp(all,'al')},copied.al?'✓ All':'Copy All')
+      )
+    );
+  };
+
+  return ce('div',null,
+    modal&&ce(SettingsModal,{keys,models:mods,active,onChange:onSettingsSave,onClose:()=>setModal(false)}),
+
+    ce('header',{className:'hdr'},
+      ce('div',{className:'logo'},
+        ce('div',{className:'logo-box'},'▶'),
+        ce('div',{className:'logo-name'},'CLIP',ce('b',null,'READY'))
+      ),
+      ce('div',{className:'hdr-r'},
+        isConfigured
+          ?ce('div',{className:'provider-badge active',onClick:()=>setModal(true)},
+              activeProvider.icon,' ',activeProvider.name,' ·  ',mods[active].split('-')[0],'  ▾')
+          :ce('div',{className:'provider-badge inactive',onClick:()=>setModal(true)},'⚠ Configure AI'),
+        ce('button',{className:'settings-btn',onClick:()=>setModal(true)},'⚙ AI Settings')
+      )
+    ),
+
+    // UPLOAD
+    phase==='upload'&&ce('div',{className:'page fade-in'},
+      ce('div',{className:'up-hero'},
+        ce('div',{className:'up-badge'},'Choose your AI · Claude, GPT-4o, Gemini, Pixtral'),
+        ce('h1',{className:'up-title'},'Your Video. ',ce('em',null,'Social'),ce('br'),'Ready in Seconds.'),
+        ce('p',{className:'up-sub'},'Upload any video. AI reads the scene, detects location and weather, then writes captions, subtitles, and platform-specific descriptions — and burns them into your video.')
+      ),
+      !isConfigured&&ce('div',{className:'err-box',style:{textAlign:'center',marginBottom:'24px',cursor:'pointer'},onClick:()=>setModal(true)},
+        '⚠️  No AI provider configured. Click here to add your API key →'
+      ),
+      ce('div',{ref:dropRef,className:'drop-zone',
+        onClick:()=>fileRef.current?.click(),
+        onDragOver:e=>{e.preventDefault();dropRef.current?.classList.add('over');},
+        onDragLeave:()=>dropRef.current?.classList.remove('over'),
+        onDrop:e=>{e.preventDefault();dropRef.current?.classList.remove('over');run(e.dataTransfer.files?.[0]);}
+      },
+        ce('div',{className:'drop-icon'},'🎬'),
+        ce('div',{className:'drop-h'},'Drop Your Video Here'),
+        ce('p',{className:'drop-p'},'or ',ce('strong',null,'click to browse'),' · up to 500MB'),
+        ce('div',{className:'drop-fmts'},['MP4','MOV','M4V','WebM','AVI','MKV'].map(f=>ce('span',{key:f,className:'fmt'},f)))
+      ),
+      ce('input',{ref:fileRef,type:'file',accept:'video/*',style:{display:'none'},onChange:e=>run(e.target.files?.[0])}),
+      err&&ce('div',{className:'err-box'},err)
+    ),
+
+    // PROCESSING
+    phase==='processing'&&ce('div',{className:'page'},
+      ce('div',{className:'proc-wrap fade-in'},
+        ce('div',{className:'proc-ring'},
+          ce('svg',{className:'ring-svg',width:104,height:104,viewBox:'0 0 104 104'},
+            ce('circle',{className:'ring-bg',cx:52,cy:52,r:44}),
+            ce('circle',{className:'ring-fg',cx:52,cy:52,r:44,style:{strokeDashoffset:276-(step/STEPS.length)*276}})
+          ),
+          ce('div',{className:'ring-ic'},STEPS[step]?.icon||'⚡')
+        ),
+        ce('div',{className:'proc-h'},'Analyzing'),
+        ce('div',{className:'proc-s'},
+          (STEPS[step]?.lbl||'')+'...',
+          step===3&&activeProvider?ce('span',{style:{color:activeProvider.color,marginLeft:'8px'}},`via ${activeProvider.name}`):null
+        ),
+        ce('ul',{className:'steps'},STEPS.map((s,i)=>ce('li',{key:i,className:`step ${i===step?'on':i<step?'done':''}`},ce('span',{className:'step-ic'},i<step?'✓':s.icon),s.lbl)))
+      )
+    ),
+
+    // PREVIEW
+    phase==='preview'&&ai&&meta&&ce('div',{className:'page fade-in'},
+      ce('div',{className:'res-hdr'},
+        ce('div',{className:'res-title'},'⚡ Content Package'),
+        ce('button',{className:'back-btn',onClick:reset},'← New Video')
+      ),
+      ce('div',{className:'grid'},
+        ce('div',{className:'col'},
+          ce('div',null,
+            ce('span',{className:'lbl'},'Preview — play to see subtitles'),
+            ce('div',{className:'vid-wrap'},
+              ce('video',{ref:vidRef,src:vurl,controls:true,playsInline:true}),
+              curOv&&ce('div',{className:'vid-ov'},curOv.text),
+              curSub&&ce('div',{className:'vid-sub'},`${curSub.emoji||''} ${curSub.text}`.trim())
+            )
+          ),
+          ce('div',{className:'card'},
+            ce('span',{className:'lbl'},'AI Scene Understanding'),
+            ce('p',{className:'scene'},ai.understanding),
+            ce('hr',{className:'dv'}),
+            ce('div',{className:'meta-g'},...(()=>{
+              const rows=[{k:'Duration',v:fmtT(meta.duration)},{k:'Resolution',v:`${meta.width}×${meta.height}`},{k:'Recorded',v:meta.datetime?.toLocaleDateString()||'—'},{k:'Mood',v:ai.mood||'—'},...(loc?[{k:'Location',v:loc}]:[]),...(wx?[{k:'Weather',v:`${wx.desc}${wx.tempF!=null?` · ${wx.tempF}°F`:''}`}]:[]),...(meta.camera?[{k:'Camera',v:meta.camera}]:[])];
+              return rows.map(({k,v})=>ce('div',{key:k,className:'meta-r'},ce('span',{className:'meta-k'},k),ce('span',{className:'meta-v'},v)));
+            })())
+          ),
+          ce('div',{className:'card'},
+            ce('span',{className:'lbl'},`Subtitles · ${ai.subtitles?.length||0} segments`),
+            ce('div',{className:'sub-list'},...(ai.subtitles||[]).map((s,i)=>ce('div',{key:i,className:'sub-row'},ce('span',{className:'sub-t'},fmtT(s.start)),ce('span',{className:'sub-tx'},`${s.emoji||''} ${s.text}`.trim()))))
+          )
+        ),
+        ce('div',{className:'col'},
+          ce('div',null,
+            ce('span',{className:'lbl'},'Platform Content'),
+            ce('div',{className:'ptabs'},PLATS.map(p=>ce('button',{key:p.key,className:`ptab ${plat===p.key?'on':''}`,onClick:()=>setPlat(p.key)},ce('span',{className:'ptab-ic'},p.icon),p.label))),
+            ce(PlatPanel)
+          ),
+          ce('div',{className:'card',style:{textAlign:'center',padding:'24px'}},
+            ce('span',{className:'lbl'},'Export'),
+            ce('p',{style:{fontSize:'12px',color:'var(--muted)',lineHeight:'1.85',marginBottom:'20px'}},'Burn subtitles and overlays into the video. Runs in real-time in your browser.'),
+            ce('button',{className:'btn primary btn-full',onClick:doExport},'⬇  Export Video with Captions'),
+            err&&ce('div',{className:'err-box',style:{marginTop:'12px',textAlign:'left'}},err)
+          )
+        )
+      )
+    ),
+
+    // EXPORTING
+    phase==='exporting'&&ce('div',{className:'page'},
+      ce('div',{className:'ctr fade-in'},
+        ce('div',{className:'big-ic'},'🎬'),
+        ce('div',{className:'ex-title'},'Rendering Video'),
+        ce('p',{className:'ex-sub'},'Subtitles and overlays are being burned in real-time. This takes as long as the video.'),
+        ce('div',{className:'prog-wrap'},ce('div',{className:'prog-bar',style:{width:`${Math.round(expPct*100)}%`}})),
+        ce('div',{style:{fontSize:'12px',color:'var(--muted)',marginBottom:'8px'}},`${Math.round(expPct*100)}% complete`),
+        ce('p',{style:{fontSize:'11px',color:'var(--muted2)',maxWidth:'320px',margin:'0 auto',lineHeight:'1.7'}},'Keep this tab open. Do not navigate away.')
+      )
+    ),
+
+    // DONE
+    phase==='done'&&ce('div',{className:'page'},
+      ce('div',{className:'ctr fade-in'},
+        ce('div',{className:'big-ic'},'🎉'),
+        ce('div',{className:'ex-title'},'Your Video is Ready!'),
+        ce('p',{className:'ex-sub'},'Captions and overlays are burned in. Download and post to your platforms.'),
+        ce('div',{className:'done-acts'},
+          ce('a',{href:expUrl,download:`clipready-${Date.now()}.webm`,className:'dl'},'⬇  Download Video'),
+          ce('button',{className:'btn',onClick:()=>setPhase('preview')},'← Back to Edit'),
+          ce('button',{className:'btn',onClick:reset},'+ New Video')
+        ),
+        ce('p',{style:{fontSize:'11px',color:'var(--muted2)',marginTop:'20px'}},'💡 After downloading, copy platform descriptions from the Preview screen.')
+      )
+    )
+  );
+}
+
+createRoot(document.getElementById('root')).render(ce(React.StrictMode,null,ce(App)));
+</script>
+</body>
+</html>
