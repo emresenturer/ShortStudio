@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ClipReady · AI Social Video Studio</title>
+  <title>ShortStudio · AI Social Video Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -195,9 +195,9 @@ const PROVIDERS={
   claude:{
     id:'claude',name:'Claude',company:'Anthropic',icon:'🔶',color:'#d97757',
     models:[
-      {id:'claude-sonnet-4-6',label:'Sonnet 4.6 — Recommended'},
-      {id:'claude-opus-4-6',label:'Opus 4.6 — Best Quality'},
-      {id:'claude-haiku-4-5-20251001',label:'Haiku 4.5 — Fastest'}
+      {id:'claude-sonnet-4-6',label:'Sonnet 4.6 · Recommended'},
+      {id:'claude-opus-4-6',label:'Opus 4.6 · Best Quality'},
+      {id:'claude-haiku-4-5-20251001',label:'Haiku 4.5 · Fastest'}
     ],
     placeholder:'sk-ant-api03-...',
     hint:'Starts with sk-ant-',
@@ -206,8 +206,8 @@ const PROVIDERS={
   openai:{
     id:'openai',name:'GPT-4o',company:'OpenAI',icon:'🟢',color:'#10a37f',
     models:[
-      {id:'gpt-4o',label:'GPT-4o — Recommended'},
-      {id:'gpt-4o-mini',label:'GPT-4o Mini — Faster & cheaper'},
+      {id:'gpt-4o',label:'GPT-4o · Recommended'},
+      {id:'gpt-4o-mini',label:'GPT-4o Mini · Faster & cheaper'},
       {id:'gpt-4-turbo',label:'GPT-4 Turbo'}
     ],
     placeholder:'sk-proj-...',
@@ -217,9 +217,9 @@ const PROVIDERS={
   gemini:{
     id:'gemini',name:'Gemini',company:'Google',icon:'🔵',color:'#4285f4',
     models:[
-      {id:'gemini-2.0-flash',label:'Gemini 2.0 Flash — Recommended'},
-      {id:'gemini-1.5-pro',label:'Gemini 1.5 Pro — Best quality'},
-      {id:'gemini-1.5-flash',label:'Gemini 1.5 Flash — Fast & cheap'}
+      {id:'gemini-2.0-flash',label:'Gemini 2.0 Flash · Recommended'},
+      {id:'gemini-1.5-pro',label:'Gemini 1.5 Pro · Best quality'},
+      {id:'gemini-1.5-flash',label:'Gemini 1.5 Flash · Fast & cheap'}
     ],
     placeholder:'AIzaSy...',
     hint:'Starts with AIza',
@@ -228,8 +228,8 @@ const PROVIDERS={
   mistral:{
     id:'mistral',name:'Pixtral',company:'Mistral AI',icon:'🟠',color:'#ff7000',
     models:[
-      {id:'pixtral-large-latest',label:'Pixtral Large — Best quality'},
-      {id:'pixtral-12b-2409',label:'Pixtral 12B — Faster'}
+      {id:'pixtral-large-latest',label:'Pixtral Large · Best quality'},
+      {id:'pixtral-12b-2409',label:'Pixtral 12B · Faster'}
     ],
     placeholder:'your-mistral-key...',
     hint:'From console.mistral.ai',
@@ -311,7 +311,7 @@ async function callClaude(key,model,system,userText,images){
     headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model,max_tokens:1500,system,messages:[{role:'user',content:[{type:'text',text:userText},...images.map(b=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b}}))]}]})
   });
-  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid Claude API key — check console.anthropic.com');if(res.status===429)throw new Error('Claude rate limit — wait and retry');throw new Error(`Claude ${res.status}: ${e?.error?.message||res.statusText}`);}
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid Claude API key: check console.anthropic.com');if(res.status===429)throw new Error('Claude rate limit: wait and retry');throw new Error(`Claude ${res.status}: ${e?.error?.message||res.statusText}`);}
   const d=await res.json();if(d.error)throw new Error(d.error.message);
   return d.content?.find(b=>b.type==='text')?.text||'';
 }
@@ -322,7 +322,7 @@ async function callOpenAI(key,model,system,userText,images){
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
     body:JSON.stringify({model,max_tokens:1500,response_format:{type:'json_object'},messages:[{role:'system',content:system},{role:'user',content:[{type:'text',text:userText},...images.map(b=>({type:'image_url',image_url:{url:`data:image/jpeg;base64,${b}`,detail:'high'}}))]}]})
   });
-  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid OpenAI API key — check platform.openai.com');if(res.status===429)throw new Error('OpenAI rate limit — wait and retry');throw new Error(`OpenAI ${res.status}: ${e?.error?.message||res.statusText}`);}
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid OpenAI API key: check platform.openai.com');if(res.status===429)throw new Error('OpenAI rate limit: wait and retry');throw new Error(`OpenAI ${res.status}: ${e?.error?.message||res.statusText}`);}
   const d=await res.json();
   return d.choices?.[0]?.message?.content||'';
 }
@@ -345,7 +345,7 @@ async function callMistral(key,model,system,userText,images){
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
     body:JSON.stringify({model,max_tokens:1500,messages:[{role:'system',content:system},{role:'user',content:[{type:'text',text:userText},...images.map(b=>({type:'image_url',image_url:`data:image/jpeg;base64,${b}`}))]}]})
   });
-  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid Mistral API key — check console.mistral.ai');if(res.status===429)throw new Error('Mistral rate limit — wait and retry');throw new Error(`Mistral ${res.status}: ${e?.message||res.statusText}`);}
+  if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===401)throw new Error('Invalid Mistral API key: check console.mistral.ai');if(res.status===429)throw new Error('Mistral rate limit: wait and retry');throw new Error(`Mistral ${res.status}: ${e?.message||res.statusText}`);}
   const d=await res.json();
   return d.choices?.[0]?.message?.content||'';
 }
@@ -369,7 +369,7 @@ async function analyzeVideo(providerId,key,model,frames,meta,loc,wx){
   },
   "thumbnailMoment": ${(dur*.3).toFixed(1)}
 }
-Rules: subtitles 5-8 entries evenly 0–${dur.toFixed(0)}s, max 8 words each. Weave location (${loc||'unknown'}) and weather (${wx?.desc||'unknown'}) in naturally. hashtags: no # symbol, lowercase, no spaces. Platform voices: TikTok=casual/trendy, YouTube=SEO/informative, Facebook=warm/community.`;
+Rules: subtitles 5-8 entries evenly 0 to ${dur.toFixed(0)}s, max 8 words each. Weave location (${loc||'unknown'}) and weather (${wx?.desc||'unknown'}) in naturally. hashtags: no # symbol, lowercase, no spaces. Platform voices: TikTok=casual/trendy, YouTube=SEO/informative, Facebook=warm/community.`;
 
   const userText=`Metadata:\n${ctx}\n\nFrames sampled: ${frameDesc}\n\nGenerate the complete content package:`;
 
@@ -537,8 +537,8 @@ function App(){
 
   const run=useCallback(async(f)=>{
     if(!isVid(f)){setErr('Please upload a video file (MP4, MOV, WebM, etc.)');return;}
-    if(f.size>600*1024*1024){setErr('File too large — max 500MB.');return;}
-    if(!active||!keys[active]?.trim()){setErr('Please configure an AI provider first — click "AI Settings" in the top right.');setModal(true);return;}
+    if(f.size>600*1024*1024){setErr('File too large. Max 500MB.');return;}
+    if(!active||!keys[active]?.trim()){setErr('Please configure an AI provider first: click "AI Settings" in the top right.');setModal(true);return;}
     setErr('');setFile(f);setVurl(URL.createObjectURL(f));setPhase('processing');setStep(0);
     try{
       const[vMeta,exif]=await Promise.all([loadVideoMeta(f),getExif(f)]);
@@ -568,10 +568,10 @@ function App(){
     const pc=ai?.platforms?.[plat]||{};
     const all=[pc.title,pc.description,(pc.hashtags||[]).map(t=>'#'+t).join(' ')].filter(Boolean).join('\n\n');
     return ce('div',{className:'card'},
-      ce('div',{className:'pc-title'},pc.title||'—'),
+      ce('div',{className:'pc-title'},pc.title||'-'),
       ce('hr',{className:'dv'}),
       ce('span',{className:'lbl'},'Description'),
-      ce('div',{className:'pc-desc'},pc.description||'—'),
+      ce('div',{className:'pc-desc'},pc.description||'-'),
       plat==='tiktok'&&pc.hook?ce(React.Fragment,null,ce('hr',{className:'dv'}),ce('span',{className:'lbl'},'Opening Hook'),ce('div',{className:'hook'},`"${pc.hook}"`)):null,
       plat==='youtube'&&pc.tags?.length?ce(React.Fragment,null,ce('hr',{className:'dv'}),ce('span',{className:'lbl'},'YouTube Tags'),ce('div',{className:'tags'},...(pc.tags||[]).map((t,i)=>ce('span',{key:i,className:'kwtag'},t)))):null,
       ce('hr',{className:'dv'}),
@@ -608,7 +608,7 @@ function App(){
       ce('div',{className:'up-hero'},
         ce('div',{className:'up-badge'},'Choose your AI · Claude, GPT-4o, Gemini, Pixtral'),
         ce('h1',{className:'up-title'},'Your Video. ',ce('em',null,'Social'),ce('br'),'Ready in Seconds.'),
-        ce('p',{className:'up-sub'},'Upload any video. AI reads the scene, detects location and weather, then writes captions, subtitles, and platform-specific descriptions — and burns them into your video.')
+        ce('p',{className:'up-sub'},'Upload any video. AI reads the scene, detects location and weather, then writes captions, subtitles, and platform-specific descriptions, and burns them into your video.')
       ),
       !isConfigured&&ce('div',{className:'err-box',style:{textAlign:'center',marginBottom:'24px',cursor:'pointer'},onClick:()=>setModal(true)},
         '⚠️  No AI provider configured. Click here to add your API key →'
@@ -656,7 +656,7 @@ function App(){
       ce('div',{className:'grid'},
         ce('div',{className:'col'},
           ce('div',null,
-            ce('span',{className:'lbl'},'Preview — play to see subtitles'),
+            ce('span',{className:'lbl'},'Preview · play to see subtitles'),
             ce('div',{className:'vid-wrap'},
               ce('video',{ref:vidRef,src:vurl,controls:true,playsInline:true}),
               curOv&&ce('div',{className:'vid-ov'},curOv.text),
@@ -668,7 +668,7 @@ function App(){
             ce('p',{className:'scene'},ai.understanding),
             ce('hr',{className:'dv'}),
             ce('div',{className:'meta-g'},...(()=>{
-              const rows=[{k:'Duration',v:fmtT(meta.duration)},{k:'Resolution',v:`${meta.width}×${meta.height}`},{k:'Recorded',v:meta.datetime?.toLocaleDateString()||'—'},{k:'Mood',v:ai.mood||'—'},...(loc?[{k:'Location',v:loc}]:[]),...(wx?[{k:'Weather',v:`${wx.desc}${wx.tempF!=null?` · ${wx.tempF}°F`:''}`}]:[]),...(meta.camera?[{k:'Camera',v:meta.camera}]:[])];
+              const rows=[{k:'Duration',v:fmtT(meta.duration)},{k:'Resolution',v:`${meta.width}×${meta.height}`},{k:'Recorded',v:meta.datetime?.toLocaleDateString()||'-'},{k:'Mood',v:ai.mood||'-'},...(loc?[{k:'Location',v:loc}]:[]),...(wx?[{k:'Weather',v:`${wx.desc}${wx.tempF!=null?` · ${wx.tempF}°F`:''}`}]:[]),...(meta.camera?[{k:'Camera',v:meta.camera}]:[])];
               return rows.map(({k,v})=>ce('div',{key:k,className:'meta-r'},ce('span',{className:'meta-k'},k),ce('span',{className:'meta-v'},v)));
             })())
           ),
@@ -712,7 +712,7 @@ function App(){
         ce('div',{className:'ex-title'},'Your Video is Ready!'),
         ce('p',{className:'ex-sub'},'Captions and overlays are burned in. Download and post to your platforms.'),
         ce('div',{className:'done-acts'},
-          ce('a',{href:expUrl,download:`clipready-${Date.now()}.webm`,className:'dl'},'⬇  Download Video'),
+          ce('a',{href:expUrl,download:`shortstudio-${Date.now()}.webm`,className:'dl'},'⬇  Download Video'),
           ce('button',{className:'btn',onClick:()=>setPhase('preview')},'← Back to Edit'),
           ce('button',{className:'btn',onClick:reset},'+ New Video')
         ),
